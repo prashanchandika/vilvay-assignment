@@ -1,0 +1,50 @@
+---
+- name: Update web servers
+  hosts: webserver
+  become: true
+
+  tasks:
+  - name: Create webserver root
+    command: mkdir -p /var/www/html
+
+  - name: chown the webroot
+    command: chown nginx:nginx /var/www/html
+
+  - name: Copy nginx config
+    copy:
+        src: /tmp/ansible/files/webserver.conf
+        dest: /etc/nginx/conf.d/webserver.conf
+        owner: nginx
+        group: nginx
+        mode: '0644'
+
+  - name: restart nginx
+    command: systemctl restart nginx
+
+  - name: Copy index file
+    copy:
+        src: /tmp/ansible/files/index.html
+        dest: /var/www/html/index.html
+        owner: nginx
+        group: nginx
+        mode: '0644'
+
+- name: Create nginx docker container with index page
+  hosts: webserver
+  become: true
+
+  tasks:
+  - name: instal docker
+    command: yum install -y docker
+
+  - name: start docker
+    command: systemctl start docker
+
+  - name: enable docker
+    command: systemctl enable docker
+
+  - name: pull latest nginx image
+    command: docker pull nginx
+
+  - name: start nginx container binding to port 82
+    command: docker run -d -p 82:80 -v /var/www/html:/usr/share/nginx/html nginx:latest
